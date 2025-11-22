@@ -578,6 +578,8 @@
         ==================================================== -->
       <!-- Include the content -->
       <div id="portfolio-hamzaig"></div>
+      <!-- Portfolio Modals for top 3 projects -->
+      <div id="portfolio-modals-main"></div>
 
       <!-- portfolio-area-end -->
 
@@ -2363,12 +2365,33 @@
         .then(
           (data) => (document.getElementById("header-hamzaig").innerHTML = data)
         );
-      fetch("projects/index.html")
+      fetch("projects/index-top3.html")
         .then((response) => response.text())
         .then(
           (data) =>
             (document.getElementById("portfolio-hamzaig").innerHTML = data)
         );
+      
+      // Load modals for top 3 projects
+      fetch("projects/index.html")
+        .then((response) => response.text())
+        .then((data) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(data, 'text/html');
+          const modals = doc.querySelectorAll('.modal');
+          let modalsHTML = '';
+          // Get modals for: live-call-translator, levate-ai, voice-dubbing
+          const requiredModals = ['live-call-translator', 'levate-ai', 'voice-dubbing'];
+          modals.forEach(modal => {
+            const modalId = modal.getAttribute('id');
+            if (modalId && requiredModals.includes(modalId)) {
+              modalsHTML += modal.outerHTML;
+            }
+          });
+          if (modalsHTML) {
+            document.getElementById("portfolio-modals-main").innerHTML = modalsHTML;
+          }
+        });
       fetch("blog/index.html")
         .then((response) => response.text())
         .then(
