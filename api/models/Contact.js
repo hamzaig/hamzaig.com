@@ -17,9 +17,7 @@ const ContactSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: [true, 'Phone number is required'],
       trim: true,
-      minlength: [11, 'Phone number must be at least 11 digits'],
     },
     company: {
       type: String,

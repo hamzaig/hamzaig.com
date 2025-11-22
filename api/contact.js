@@ -60,10 +60,6 @@ module.exports = async (req, res) => {
       errors.email = 'Please enter a valid email address';
     }
 
-    if (!payload.phone || payload.phone.length < 11) {
-      errors.phone = 'Phone number must be at least 11 digits';
-    }
-
     if (!payload.serviceType || payload.serviceType.length === 0) {
       errors.serviceType = 'Please select a service type';
     }
