@@ -23,9 +23,10 @@ $(function () {
     // Submitting the form using AJAX
     $.ajax({
       type: "POST",
-      url: $(form).attr("action"),
+      url: $(form).attr("action") || "/api/contact",
       contentType: "application/json",
       data: JSON.stringify(formDataJson),
+      dataType: "json",
     })
       .done(function (response) {
         // Making the formMessages div to have the 'success' class
@@ -33,29 +34,48 @@ $(function () {
         $(formMessages).addClass("success");
 
         // Setting the message text
-        var res = JSON.parse(response);
-        $(formMessages).text(res?.message || "Form Submitted Successfully!");
+        try {
+          var res = typeof response === 'string' ? JSON.parse(response) : response;
+          $(formMessages).text(res?.message || "Thanks for reaching out! We'll get back to you soon.");
+        } catch (e) {
+          $(formMessages).text(response || "Thanks for reaching out! We'll get back to you soon.");
+        }
 
         // Clearing the form after successful submission
         $("#inputName").val("");
         $("#inputEmail").val("");
         $("#inputPhone").val("");
+        $("#inputCompany").val("");
+        $("#inputServiceType").val("");
+        $("#inputBudget").val("");
         $("#inputMessage").val("");
-        $("#inputSubject").val("");
+        $("#inputConsent").prop("checked", false);
+        $("#contact-submit").prop("disabled", false);
       })
       .fail(function (data) {
         // Making the formMessages div to have the 'error' class
         $(formMessages).removeClass("success");
         $(formMessages).addClass("error");
         // Setting the message text
-        $(formMessages).text(
-          "Oops! An error occurred and your message could not be sent."
-        );
-        // if (data.responseText !== '') {
-        //    $(formMessages).text(data.responseText);
-        // } else {
-        //    $(formMessages).text('Oops! An error occured and your message could not be sent.');
-        // }
+        try {
+          var errorResponse = typeof data.responseJSON !== 'undefined' ? data.responseJSON : 
+                             (typeof data.responseText !== 'undefined' && data.responseText !== '' ? 
+                              JSON.parse(data.responseText) : null);
+          if (errorResponse && errorResponse.error) {
+            $(formMessages).text(errorResponse.error);
+          } else if (errorResponse && errorResponse.message) {
+            $(formMessages).text(errorResponse.message);
+          } else {
+            $(formMessages).text(
+              "Oops! An error occurred and your message could not be sent. Please try again."
+            );
+          }
+        } catch (e) {
+          $(formMessages).text(
+            "Oops! An error occurred and your message could not be sent. Please try again."
+          );
+        }
+        $("#contact-submit").prop("disabled", false);
       });
   });
 });

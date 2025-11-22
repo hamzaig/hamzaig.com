@@ -1,56 +1,107 @@
 <?php
+    // Set content type to JSON
+    header('Content-Type: application/json');
 
-
-    // Only process POST reqeusts.
+    // Only process POST requests.
     if ($_SERVER["REQUEST_METHOD"] == "POST") {
         // Get the form fields and remove whitespace.
-        $name = strip_tags(trim($_POST["inputName"]));
-                $name = str_replace(array("\r","\n"),array(" "," "),$name);
-        $email = filter_var(trim($_POST["inputEmail"]), FILTER_SANITIZE_EMAIL);
-        //$phone = filter_var(trim($_POST["inputPhone"], FILTER_SANITIZE_NUMBER_INT);
-        $phone = trim($_POST["inputPhone"]);
-        $message = trim($_POST["inputMessage"]);
+        $name = isset($_POST["inputName"]) ? strip_tags(trim($_POST["inputName"])) : "";
+        $name = str_replace(array("\r","\n"),array(" "," "),$name);
+        $email = isset($_POST["inputEmail"]) ? filter_var(trim($_POST["inputEmail"]), FILTER_SANITIZE_EMAIL) : "";
+        $phone = isset($_POST["inputPhone"]) ? trim($_POST["inputPhone"]) : "";
+        $company = isset($_POST["inputCompany"]) ? strip_tags(trim($_POST["inputCompany"])) : "";
+        $serviceType = isset($_POST["inputServiceType"]) ? strip_tags(trim($_POST["inputServiceType"])) : "";
+        $budget = isset($_POST["inputBudget"]) ? strip_tags(trim($_POST["inputBudget"])) : "";
+        $message = isset($_POST["inputMessage"]) ? trim($_POST["inputMessage"]) : "";
+        $consent = isset($_POST["inputConsent"]) && ($_POST["inputConsent"] === "on" || $_POST["inputConsent"] === true || $_POST["inputConsent"] === "1");
 
-        // Check that data was sent to the mailer.
-        if ( empty($name) OR empty($phone) OR empty($message) OR !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            // Set a 400 (bad request) response code and exit.
+        // Validation
+        $errors = array();
+
+        if (empty($name) || strlen($name) < 2) {
+            $errors["name"] = "Name must be at least 2 characters";
+        }
+
+        if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors["email"] = "Please enter a valid email address";
+        }
+
+        if (empty($phone) || strlen($phone) < 11) {
+            $errors["phone"] = "Phone number must be at least 11 digits";
+        }
+
+        if (empty($serviceType)) {
+            $errors["serviceType"] = "Please select a service type";
+        }
+
+        if (empty($budget)) {
+            $errors["budget"] = "Please select a budget range";
+        }
+
+        if (empty($message) || strlen($message) < 10) {
+            $errors["message"] = "Message must be at least 10 characters";
+        }
+
+        if (!$consent) {
+            $errors["consent"] = "You must agree to be contacted";
+        }
+
+        // If there are validation errors, return them
+        if (!empty($errors)) {
             http_response_code(400);
-            echo "Oops! There was a problem Please complete the form and try again.";
+            echo json_encode(array(
+                "ok" => false,
+                "errors" => $errors,
+                "error" => "Please check your form and try again."
+            ));
             exit;
         }
 
         // Set the recipient email address.
-        // FIXME: Update this to your desired email address.
-        $recipient = "xuwelkhan@gmail.com"; /** DON'T FORGET TO PUT YOUR EMAIL HERE **/
+        $recipient = "hamzaig@yahoo.com"; /** DON'T FORGET TO PUT YOUR EMAIL HERE **/
 
         // Set the email subject.
-        $subject = "New message from $name";
+        $subject = "New Contact Form Submission - " . $serviceType;
 
         // Making email content
         $email_content = "Name: $name\n";
-        $email_content .= "Email: $email\n\n";
-        $email_content .= "Phone: $phone\n\n";
-        $email_content .= "Message:\n$message\n";
+        $email_content .= "Email: $email\n";
+        $email_content .= "Phone: $phone\n";
+        if (!empty($company)) {
+            $email_content .= "Company: $company\n";
+        }
+        $email_content .= "Service Type: $serviceType\n";
+        $email_content .= "Budget Range: $budget\n";
+        $email_content .= "\nMessage:\n$message\n";
 
         // Making email headers
-        $email_headers = "From: $name <$email>";
+        $email_headers = "From: $name <$email>\r\n";
+        $email_headers .= "Reply-To: $email\r\n";
+        $email_headers .= "X-Mailer: PHP/" . phpversion();
 
         // Sending email.
         if (mail($recipient, $subject, $email_content, $email_headers)) {
-            // Seting a 200 (okay) response code.
+            // Setting a 200 (okay) response code.
             http_response_code(200);
-            echo "Great ! Your message has been sent !!"; // You may edit this value with your own
+            echo json_encode(array(
+                "ok" => true,
+                "message" => "Thanks for reaching out! We'll get back to you soon."
+            ));
         } else {
             // Setting a 500 (internal server error) response code.
             http_response_code(500);
-            echo "Oops! Something wrong and we couldn't send your message.";
+            echo json_encode(array(
+                "ok" => false,
+                "error" => "Oops! Something went wrong and we couldn't send your message. Please try again."
+            ));
         }
 
     } else {
         // Not a POST request, set a 403 (forbidden) response code.
         http_response_code(403);
-        echo "There was a problem with your input, please try again.";
+        echo json_encode(array(
+            "ok" => false,
+            "error" => "There was a problem with your input, please try again."
+        ));
     }
-
-
 ?>
