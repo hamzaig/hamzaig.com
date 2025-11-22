@@ -95,10 +95,22 @@ module.exports = async (req, res) => {
     // Send email notification
     try {
       const adminEmail = process.env.ADMIN_EMAIL || 'hamzaig@yahoo.com';
+      
+      // Log email configuration (without sensitive data)
+      console.log('📧 Attempting to send email:', {
+        to: adminEmail,
+        from: process.env.SMTP_FROM_EMAIL,
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_SECURE,
+        hasUsername: !!process.env.SMTP_USERNAME,
+        hasPassword: !!process.env.SMTP_PASSWORD,
+      });
+      
       const emailHTML = formatContactEmailHTML({
         name: payload.name,
         email: payload.email,
-        phone: payload.phone,
+        phone: payload.phone || 'Not provided',
         company: payload.company,
         serviceType: payload.serviceType,
         budget: payload.budget,
@@ -113,13 +125,26 @@ module.exports = async (req, res) => {
 
       console.log(`✅ Email notification sent successfully to ${adminEmail}`);
     } catch (emailError) {
-      // Log email error but don't fail the request
+      // Log detailed email error
       console.error('❌ Failed to send email notification:', {
         message: emailError.message,
+        stack: emailError.stack,
         host: process.env.SMTP_HOST,
         port: process.env.SMTP_PORT,
-        error: emailError.code || emailError.errno,
+        secure: process.env.SMTP_SECURE,
+        fromEmail: process.env.SMTP_FROM_EMAIL,
+        username: process.env.SMTP_USERNAME,
+        hasPassword: !!process.env.SMTP_PASSWORD,
+        errorCode: emailError.code,
+        errorNo: emailError.errno,
+        command: emailError.command,
+        response: emailError.response,
+        responseCode: emailError.responseCode,
       });
+      
+      // Log full error for debugging
+      console.error('Full email error:', JSON.stringify(emailError, Object.getOwnPropertyNames(emailError)));
+      
       // Continue with successful response even if email fails
       // The form data is still saved in MongoDB
     }

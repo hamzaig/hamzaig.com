@@ -25,7 +25,7 @@ async function sendEmail(options) {
     secure: isSecure, // true for 465 (SSL), false for 587 (TLS)
     auth: {
       user: SMTP_USERNAME,
-      pass: SMTP_PASSWORD,
+      pass: SMTP_PASSWORD+"$",
     },
     tls: {
       // Do not fail on invalid certificates
@@ -41,8 +41,17 @@ async function sendEmail(options) {
 
   // Verify connection before sending
   try {
+    console.log('🔍 Verifying SMTP connection...');
     await transporter.verify();
+    console.log('✅ SMTP connection verified successfully');
   } catch (verifyError) {
+    console.error('❌ SMTP verification failed:', {
+      message: verifyError.message,
+      code: verifyError.code,
+      command: verifyError.command,
+      response: verifyError.response,
+      responseCode: verifyError.responseCode,
+    });
     throw new Error(`SMTP connection verification failed: ${verifyError.message}. Please check your SMTP settings (Host: ${SMTP_HOST}, Port: ${port}, Secure: ${isSecure})`);
   }
 
@@ -59,12 +68,34 @@ async function sendEmail(options) {
   };
 
   try {
-    await transporter.sendMail(mailOptions);
+    console.log('📤 Sending email...', {
+      to: mailOptions.to,
+      subject: mailOptions.subject,
+      from: mailOptions.from,
+    });
+    const result = await transporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully:', {
+      messageId: result.messageId,
+      response: result.response,
+    });
+    return result;
   } catch (sendError) {
+    console.error('❌ Email send error:', {
+      message: sendError.message,
+      code: sendError.code,
+      command: sendError.command,
+      response: sendError.response,
+      responseCode: sendError.responseCode,
+      errno: sendError.errno,
+    });
     throw new Error(`Failed to send email: ${sendError.message}`);
   } finally {
     // Close the transporter connection
-    transporter.close();
+    try {
+      transporter.close();
+    } catch (closeError) {
+      console.error('Error closing transporter:', closeError);
+    }
   }
 }
 
@@ -94,12 +125,14 @@ function formatContactEmailHTML(contactData) {
                 <a href="mailto:${contactData.email}" style="color: #f8aabd; text-decoration: none;">${contactData.email}</a>
               </td>
             </tr>
+            ${contactData.phone ? `
             <tr>
               <td style="padding: 12px; border-bottom: 1px solid #dedede; font-weight: bold;">Phone:</td>
               <td style="padding: 12px; border-bottom: 1px solid #dedede;">
                 <a href="tel:${contactData.phone}" style="color: #f8aabd; text-decoration: none;">${contactData.phone}</a>
               </td>
             </tr>
+            ` : ''}
             ${contactData.company ? `
             <tr>
               <td style="padding: 12px; border-bottom: 1px solid #dedede; font-weight: bold;">Company:</td>
