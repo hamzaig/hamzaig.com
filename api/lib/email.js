@@ -111,6 +111,7 @@ function formatContactEmailHTML(contactData) {
       <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
         <div style="background: linear-gradient(94deg, #f8aabd, #daed1a); padding: 20px; border-radius: 8px 8px 0 0;">
           <h2 style="color: #0f0f0f; margin: 0;">New Contact Form Submission</h2>
+          <p style="color: #0f0f0f; margin: 5px 0 0 0; font-size: 14px;">Query from hamzaig.com</p>
         </div>
         
         <div style="background: #f9f9f9; padding: 30px; border: 1px solid #dedede; border-top: none; border-radius: 0 0 8px 8px;">
@@ -163,6 +164,7 @@ function formatContactEmailHTML(contactData) {
         
         <div style="margin-top: 20px; text-align: center; color: #999; font-size: 12px;">
           <p>This email was automatically generated from the hamzaig.com contact form.</p>
+          <p style="margin-top: 5px;"><strong>Query from hamzaig.com</strong></p>
         </div>
       </body>
     </html>
