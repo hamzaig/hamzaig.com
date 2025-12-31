@@ -4,6 +4,7 @@ const cors = require('cors');
 const connectDB = require('./lib/mongodb');
 const Contact = require('./models/Contact');
 const { sendEmail, formatContactEmailHTML } = require('./lib/email');
+const { createRateLimiter, detectBot } = require('./lib/rateLimiter');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,13 +14,22 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Trust proxy for accurate IP addresses (important for rate limiting)
+app.set('trust proxy', true);
+
+// Rate limiting middleware for contact form
+const contactRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  maxRequests: 3, // Max 3 submissions per 15 minutes per IP/email
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', message: 'API is running' });
 });
 
-// Contact form endpoint
-app.post('/api/contact', async (req, res) => {
+// Contact form endpoint with rate limiting
+app.post('/api/contact', contactRateLimiter, async (req, res) => {
   try {
     const contentType = req.headers['content-type'] || '';
     if (!contentType.includes('application/json') && !contentType.includes('application/x-www-form-urlencoded')) {
@@ -30,6 +40,23 @@ app.post('/api/contact', async (req, res) => {
     }
 
     const body = req.body;
+
+    // Bot detection - check before processing
+    const botDetection = detectBot(req, body);
+    if (botDetection.isBot) {
+      console.warn('🚫 Bot detected:', {
+        reasons: botDetection.reasons,
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        email: body.inputEmail || body.email,
+      });
+      
+      // Return generic error to avoid revealing detection methods
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid form submission. Please try again.'
+      });
+    }
     
     const payload = {
       name: String(body.inputName || body.name || '').trim(),

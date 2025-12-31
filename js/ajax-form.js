@@ -6,11 +6,28 @@ $(function () {
   // Getting the messages div
   var formMessages = $(".form-message");
 
+  // Track when form becomes visible/interactive (for bot detection)
+  var formStartTime = Date.now();
+  $("#formStartTime").val(formStartTime);
+
+  // Update form start time when user first interacts with form
+  $(form).on("focus", "input, textarea, select", function() {
+    if (!$("#formStartTime").val() || parseInt($("#formStartTime").val()) === 0) {
+      formStartTime = Date.now();
+      $("#formStartTime").val(formStartTime);
+    }
+  }, { once: true });
+
   // Setting up an event listener for the contact form
   $(form).submit(function (event) {
     $("#contact-submit").prop("disabled", true);
     // Stopping the browser to submit the form
     event.preventDefault();
+
+    // Calculate time spent on form (bot detection)
+    var currentTime = Date.now();
+    var formStartTimeValue = parseInt($("#formStartTime").val()) || formStartTime;
+    var timeSpent = (currentTime - formStartTimeValue) / 1000; // in seconds
 
     // Serializing the form data
     var formData = $(form).serializeArray();
@@ -19,6 +36,10 @@ $(function () {
     $.each(formData, function (_, field) {
       formDataJson[field.name] = field.value;
     });
+
+    // Add time spent to form data
+    formDataJson.timeSpent = timeSpent;
+    formDataJson.submitTime = currentTime;
 
     // Submitting the form using AJAX
     $.ajax({

@@ -1,6 +1,7 @@
 const connectDB = require('./lib/mongodb');
 const Contact = require('./models/Contact');
 const { sendEmail, formatContactEmailHTML } = require('./lib/email');
+const { detectBot } = require('./lib/rateLimiter');
 
 module.exports = async (req, res) => {
   // Enable CORS
@@ -36,6 +37,23 @@ module.exports = async (req, res) => {
     }
 
     const body = req.body;
+
+    // Bot detection - check before processing
+    const botDetection = detectBot(req, body);
+    if (botDetection.isBot) {
+      console.warn('🚫 Bot detected:', {
+        reasons: botDetection.reasons,
+        ip: req.ip || req.connection?.remoteAddress,
+        userAgent: req.headers['user-agent'],
+        email: body.inputEmail || body.email,
+      });
+      
+      // Return generic error to avoid revealing detection methods
+      return res.status(400).json({
+        ok: false,
+        error: 'Invalid form submission. Please try again.'
+      });
+    }
     
     const payload = {
       name: String(body.inputName || body.name || '').trim(),
@@ -48,6 +66,9 @@ module.exports = async (req, res) => {
       message: String(body.inputMessage || body.message || '').trim(),
       consent: Boolean(body.inputConsent || body.consent),
     };
+
+    // Remove honeypot and time tracking fields from payload (don't save them)
+    // These are only used for bot detection
 
     // Validation
     const errors = {};

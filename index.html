@@ -2271,6 +2271,22 @@
                           <!-- /col -->
                         </div>
                         <!-- /row -->
+                        <!-- Honeypot field - hidden from users but visible to bots -->
+                        <input
+                          type="text"
+                          name="website"
+                          id="website"
+                          tabindex="-1"
+                          autocomplete="off"
+                          style="position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; pointer-events: none;"
+                          aria-hidden="true"
+                        />
+                        <!-- Time tracking field -->
+                        <input
+                          type="hidden"
+                          name="formStartTime"
+                          id="formStartTime"
+                        />
                         <button
                           class="btn position-relative over-hidden text-white d-inline-block theme-bg white-text text-uppercase"
                           type="submit"
